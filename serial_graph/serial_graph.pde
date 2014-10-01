@@ -1,6 +1,6 @@
 // Graphing sketch
 
-
+import processing.serial.*;
 // This program takes ASCII-encoded strings
 // from the serial port at 9600 baud and graphs them. It expects values in the
 // range 0 to 1023, followed by a newline, or newline and carriage return
@@ -10,10 +10,13 @@
 // by Tom Igoe
 // This example code is in the public domain.
 
-import processing.serial.*;
-
 Serial myPort;        // The serial port
 int xPos = 1;         // horizontal position of the graph
+float min = 800;
+float max = 900;
+BlowDetector bd;
+float value = 842;
+public color c =  color(100,100,255);
 
 void setup () {
   // set the window size:
@@ -29,8 +32,14 @@ void setup () {
   myPort.bufferUntil('\n');
   // set inital background:
   background(0);
+
+  bd = new BlowDetector();
 }
 void draw () {
+  bd.newValue(value);
+    stroke(bd.c);
+
+
   // everything happens in the serialEvent()
 }
 
@@ -43,13 +52,15 @@ void serialEvent (Serial myPort) {
     // trim off any whitespace:
     inString = trim(inString);
     // convert to an int and map to the screen height:
-    float inByte = float(inString); 
-    println(inByte);
+    float inByte = float(inString);
+    //inByte = map(inByte, 0, 1023, 15, 115);
+    value=inByte;
 
-    inByte = map(inByte, 0, 1023, 0, height);
+    //println(inByte);
+
+    inByte = map(inByte, min, max, 0, height);
 
     // draw the line:
-    stroke(127, 34, 255);
     line(xPos, height, xPos, height - inByte);
 
     // at the edge of the screen, go back to the beginning:
