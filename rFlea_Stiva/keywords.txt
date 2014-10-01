@@ -1,0 +1,21 @@
+#######################################
+# Syntax rFlea_Stiva
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+onSync	KEYWORD2
+onMessage	KEYWORD2
+update	KEYWORD2
+init	KEYWORD2
+connect	KEYWORD2
+disconnect	KEYWORD2
+send	KEYWORD2
+#######################################
+# Constants (LITERAL1)
+#######################################
