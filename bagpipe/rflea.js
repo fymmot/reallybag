@@ -15,7 +15,8 @@ var rFleaMAC = 47740, // enter your rFlea MAC address here (e.g. 47740)
     maxSipDuration = 200,
     maxPuffDuration = 300,
     currentTrack = 0,
-    audio;
+    audio,
+    timer;
 
 ///////////////////////////////////////////////////////////////////////////////
 // HERE'S WHERE THE MAGIC HAPPENS
@@ -117,9 +118,10 @@ function blowStart() {
 
 function setPreviousAction(action) {
 	previousAction = action;
-	// setTimeout(function() {
-	// 	previousAction = "neutral";
-	// }, 400);
+	clearTimeout(timer);
+	timer = setTimeout(function() {
+		previousAction = "neutral";
+	}, 400);
 }
 
 function blowStop() {
@@ -129,10 +131,11 @@ function blowStop() {
 			setPreviousAction("puffpuff");
 			$("#output").html($("#output").html() + "PuffPuff<br/>");
 			next();
+		} else {
+			$("#output").html($("#output").html() + "Puff!<br/>");
+			playPause();
+			setPreviousAction("puff");
 		}
-		$("#output").html($("#output").html() + "Puff!<br/>");
-		playPause();
-		setPreviousAction("puff");
 	}
 	else {
 		$("#output").html($("#output").html() + "Stopped blowing after " + duration + " milliseconds<br/>");
@@ -154,9 +157,10 @@ function suckStop() {
 			setPreviousAction("sipsip");
 			$("#output").html($("#output").html() + "SipSip<br/>");
 			previous();
+		} else {
+			$("#output").html($("#output").html() + "Sip!<br/>");
+			setPreviousAction("sip");
 		}
-		$("#output").html($("#output").html() + "Sip!<br/>");
-		setPreviousAction("sip");
 	}
 	else {
 		setPreviousAction("suck");
