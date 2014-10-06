@@ -15,8 +15,6 @@ function loop(data) {
 	var pressure = data.analogIn[1];
 	if (packagesReceived == 1) bagpipe.setup(pressure);
 
-	bagpipe.checkPressureBoundaries(pressure);
-
 	//output current value
 	$("#debug").html(state + " at value " + pressure + "<br/>Volume: " + audio.getVolume());
 

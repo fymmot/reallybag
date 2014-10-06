@@ -16,13 +16,11 @@ var bagPipe = {
 		minPressure = pressure - 5;
 	},
 
-	checkPressureBoundaries: function(pressure) {
+	process: function(pressure) {
 		if (pressure > maxPressure) maxPressure = pressure;
 		else if (pressure < minPressure) minPressure = pressure;
-	},
 
-	process: function(pressure) {
-		switch (_state) {
+		switch (state) {
 			case "neutral":
 				if (pressure > basePressure + noiseMargin) {
 					blowStart();
