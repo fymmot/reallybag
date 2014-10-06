@@ -38,9 +38,10 @@ var bagPipe = {
 					blowStop();
 					suckStart();
 				}
-				$("#value").css("margin-top", -100 * (pressure - basePressure) / (maxPressure - basePressure));
-				$("#value").height(100 * (pressure - basePressure) / (maxPressure - basePressure));
-				increaseVolume((pressure - basePressure) / (maxPressure - basePressure));
+				var intensity = (pressure - basePressure) / (maxPressure - basePressure);
+				$("#value").css("margin-top", -100 * intensity);
+				$("#value").height(100 * intensity);
+				increaseVolume(intensity);
 				break;
 
 			case "suck":
@@ -51,8 +52,9 @@ var bagPipe = {
 					suckStop();
 					blowStart();
 				}
-				$("#value").height(100 * (basePressure - pressure) / (basePressure - minPressure));
-				decreaseVolume((basePressure - pressure) / (basePressure - minPressure));
+				var intensity = (basePressure - pressure) / (basePressure - minPressure);
+				$("#value").height(100 * intensity);
+				decreaseVolume(intensity);
 				break;
 		}
 	},
