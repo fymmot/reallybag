@@ -7,7 +7,7 @@ var bagPipe = {
     minPressure: -1,
     maxSipDuration: 200,
     maxPuffDuration: 300,
-    timer,
+    timer: undefined,
     basePressure: -1,
 
     setup: function(pressure) {

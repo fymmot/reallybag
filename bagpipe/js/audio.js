@@ -2,7 +2,7 @@ $(document).ready(function() {
 	audio.player = document.getElementsByTagName('audio')[0];
 });
 
-var audio {
+var audio = {
 	player: -1,
 	currentTrack: 0,
 
