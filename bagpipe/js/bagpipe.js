@@ -108,7 +108,7 @@ var bagPipe = {
 		state = "suck";
 		stateChange();
 		debug("Started sucking…")
-	}
+	},
 
 	suckStop: function() {
 		var duration = Date.now() - start;
@@ -126,6 +126,5 @@ var bagPipe = {
 			setPreviousAction("suck");
 			debug("Stopped sucking after " + duration + " milliseconds");
 		}
-	}
-
+	},
 }
