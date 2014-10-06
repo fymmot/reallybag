@@ -21,6 +21,7 @@ var bagPipe = {
 		else if (pressure < minPressure) minPressure = pressure;
 
 		switch (state) {
+
 			case "neutral":
 				if (pressure > basePressure + noiseMargin) {
 					blowStart();
@@ -29,6 +30,8 @@ var bagPipe = {
 				}
 				$("#value").height(0);
 				break;
+
+			///////////////////////////////////////////////////////////////////////////////////////
 
 			case "blow":
 				if (pressure < basePressure + noiseMargin && pressure > basePressure - noiseMargin) {
@@ -44,6 +47,8 @@ var bagPipe = {
 				increaseVolume(intensity);
 				break;
 
+			///////////////////////////////////////////////////////////////////////////////////////
+
 			case "suck":
 				if (pressure > basePressure - noiseMargin && pressure < basePressure + noiseMargin) {
 					suckStop();
@@ -57,6 +62,14 @@ var bagPipe = {
 				decreaseVolume(intensity);
 				break;
 		}
+	},
+
+	setPreviousAction: function(action) {
+		previousAction = action;
+		clearTimeout(timer);
+		timer = setTimeout(function() {
+			previousAction = "neutral";
+		}, 400);
 	},
 
 
@@ -75,15 +88,7 @@ var bagPipe = {
 		$("#value").css("background", "red");
 		debug("Started blowing…")
 	},
-
-	setPreviousAction: function(action) {
-		previousAction = action;
-		clearTimeout(timer);
-		timer = setTimeout(function() {
-			previousAction = "neutral";
-		}, 400);
-	},
-
+	
 	blowStop: function() {
 		var duration = Date.now() - start;
 		if (duration < maxPuffDuration) {
