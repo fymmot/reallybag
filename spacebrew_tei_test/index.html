@@ -1,3 +1,4 @@
+
 <!DOCTYPE html> 
 <html> 
 <head> 
@@ -6,8 +7,8 @@
 	<link rel="stylesheet" href="jquery.mobile-1.2.0.min.css" />
 	<script src="js/jquery-1.8.2.min.js"></script>
 	<script src="js/jquery.mobile-1.2.0.min.js"></script>
-	<script type="text/javascript" src="js/sbAndroid.js"></script>
-	<script type="text/javascript" src="js/sb-1.3.0.js"></script>
+	//<script type="text/javascript" src="js/sbAndroid.js"></script>
+	<script type="text/javascript" src="js/sb-1.4.1.js"></script>
 	<script type="text/javascript" src="js/flowtype.js"></script>
 	<style> 
 		@-webkit-keyframes rFlea-idle {
@@ -176,38 +177,42 @@
 	<script type="text/javascript">
 		// wher the jquery mobile is ready to initialize the UI call the setUI function 
 		$(document).bind("pageshow", setupUI);
-
+		
+		var antConencted=AntInterface.addNewChannel(false,57433,4);//false means we are opening a Slave  master
+		
+		//AndroidInterface.showToast("Ant connected "+antConencted);
+		//AndroidInterface.add_system_notification("WELCOME","Notification", 123);
+		
 		// Spacebrew Object
 		var sb
-			, app_name = "slider example"
+			, app_name = "rFlea example"
 			, values = {};
+			
+		var LED_value=0;
 
 		function setupSpacebrew (app_name) {
-			app_name = "tei" + app_name;
+			app_name = app_name;
 
 			console.log("Setting up spacebrew connection");
 			sb = new Spacebrew.Client();
 
+
 			sb.name(app_name);
-			sb.description(" rFlea module for TEI");
+			sb.description(" rFlea module Library examples");
 
 			// configure the publication and subscription feeds
 			sb.addPublish("analog0", "range", "500");
-			sb.addPublish("analog3", "range", "500");
-			sb.addPublish("digita9", "range", "500");
-			sb.addPublish("digital10", "range", "500");
+			sb.addPublish("analog1", "range", "500");
+			sb.addPublish("digital0", "range", "500");
 			sb.addPublish("digital1", "range", "500");
 			sb.addPublish("digital2", "range", "500");
+			sb.addPublish("digital3", "range", "500");
 			sb.addPublish("rssi", "range", "500");
 			sb.addPublish("json", "string", "");
-			
-			sb.addSubscribe("PWM", "range");
 			sb.addSubscribe("LED", "range");
 			
 			// override Spacebrew events - this is how you catch events coming from Spacebrew
 			sb.onRangeMessage = onRangeMessage;
-
-
 
 			// override Spacebrew events - this is how you catch events coming from Spacebrew
 			sb.onOpen = onOpen;
@@ -215,17 +220,7 @@
 
 			// connect to spacbrew
 			sb.connect();
-		};
-		
-				/**
-		 * onRangeMessage Function that is called whenever new spacebrew range messages are received.
-		 * 				  It accepts two parameters:
-		 * @param  {String} name  	Holds name of the subscription feed channel
-		 * @param  {Integer} value 	Holds value received from the subscription feed
-		 */
-		function onRangeMessage(name, value){
-			console.log("Received new range message ", value);
-			$("#"+name).slider('refresh', value);
+
 		};
 
 		if (window.location.search.indexOf("test") != -1){
@@ -238,6 +233,19 @@
 			   fontRatio : 7
 			});
 		}
+		
+		/**
+		 * onRangeMessage Function that is called whenever new spacebrew range messages are received.
+		 * 				  It accepts two parameters:
+		 * @param  {String} name  	Holds name of the subscription feed channel
+		 * @param  {Integer} value 	Holds value received from the subscription feed
+		 */
+		function onRangeMessage(name, value){
+			if(name=="LED"){
+				LED_value=Math.floor(value);
+				if (LED_value>255) LED_value=255;
+			}
+		};
 
 		function showMessage(data) {
 			showDigital(0, data.digitalIn0);
@@ -271,20 +279,23 @@
 
 			if (sb == undefined) {
 				showID(rfleaData.MAC);
-				AntInterface.vibrate(500);
-				WebSocketInterface.add_system_notification("Paired notification","You are now paired to rFlea "+rfleaData.MAC, 0);
 				setupSpacebrew(rfleaData.MAC);
 			}
 
 			for (var i in analog) {
-				sb.send("analog"+i, "range", analog[i]);
+				sb.send("analog"+i, "range", String(analog[i]));
 			}
 
 			for (var i in digital) {
-				sb.send("digital"+i, "range", digital[i]);
+				sb.send("digital"+i, "range", String(digital[i]));
 			}
 
-			sb.send("rssi", "range", rfleaData.RSSI);
+			var tx_message=toString(LED_value,1,2,3,4,5,6,7);
+			var tx_successful=AntInterface.send(tx_message); //returns true if format is correct
+					//AndroidInterface.showToast(tx_message);
+
+			
+			//sb.send("rssi", "range", rfleaData.RSSI);
 			/*sb.send("json", "string", JSON.stringify({
 				analog0: rfleaData.analogIn0,
 				analog1: rfleaData.analogIn1,
@@ -299,25 +310,25 @@
 			var data = data.split(",");
 
 			return {
-				channel: parseInt(data[2]),
+				//channel: parseInt(data[2]),
 				analogIn: [
-					parseInt(data[3]),
-					parseInt(data[4])
+					parseInt(data[0]),
+					parseInt(data[1])
 				],
-				analogIn0: parseInt(data[3]),
-				analogIn1: parseInt(data[4]),
+				analogIn0: parseInt(data[0]),
+				analogIn1: parseInt(data[1]),
 				digitalIn: [
-					parseInt(data[5]),
-					parseInt(data[6]),
-					parseInt(data[7]),
-					parseInt(data[8])
+					parseInt(data[2]),
+					parseInt(data[3]),
+					parseInt(data[4]),
+					parseInt(data[5])
 				],
-				digitalIn0: parseInt(data[5]),
-				digitalIn1: parseInt(data[6]),
-				digitalIn2: parseInt(data[7]),
-				digitalIn3: parseInt(data[8]),
-				MAC: toHex(data[9])+":"+toHex(data[10])+":" + toHex(data[11]) + ":" +toHex(data[12]),
-				RSSI: parseInt(data[13]), 
+				digitalIn0: parseInt(data[2]),
+				digitalIn1: parseInt(data[3]),
+				digitalIn2: parseInt(data[4]),
+				digitalIn3: parseInt(data[5]),
+				MAC: "rFlea " + toHex(data[8]) + ":" +toHex(data[9]),
+				//RSSI: parseInt(data[13]), 
 			}
 		}
 
@@ -328,6 +339,10 @@
 			}
 
 			return result;
+		}
+		
+		function toString(a,b,c,d,e,f,g,h){
+			return (a+":"+b+":"+c+":"+d+":"+e+":"+f+":"+g+":"+h);
 		}
 		
 		function onPaired() {
@@ -343,6 +358,10 @@
 		}
 
 		function onClose() {
+			$("#spacebrewConnection").toggleClass("connected", false);
+		}
+		function onExit() {
+			sb.close();
 			$("#spacebrewConnection").toggleClass("connected", false);
 		}
 
