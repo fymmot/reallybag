@@ -1,17 +1,17 @@
 var bagPipe = {
-	noiseMargin: 5,
+	noiseMargin: 2,
 	state: "neutral",
     previousAction: "neutral",
     start: Date.now(),
     basePressure: -1,
     maxPressure: -1,
     minPressure: -1,
-    maxSipDuration: 200,
+    maxSipDuration: 300,
     maxPuffDuration: 300,
     endActionTime: 400,	// how long to wait for the next action for combining actions
     timer: undefined,
     actionTimer: undefined,
-    values: ["n","n","n"],	// how many relevant pressure readings in a row before we care 
+    values: ["n"],	// how many relevant pressure readings in a row before we care 
 
     setup: function(pressure) {
     	this.basePressure = pressure; //measure the ambient air pressure in the very beginning
@@ -97,7 +97,7 @@ var bagPipe = {
 		var self = this;
 		this.timer = setTimeout(function() {
 			self.previousAction = "neutral";
-		}, endActionTime);
+		}, this.endActionTime);
 	},
 
 
@@ -129,7 +129,7 @@ var bagPipe = {
 				this.actionTimer = setTimeout(function() {
 					printDebug("Puff!");
 					audio.playPause();
-				}, endActionTime);
+				}, this.endActionTime);
 			}
 		}
 		else {
@@ -157,7 +157,7 @@ var bagPipe = {
 				this.actionTimer = setTimeout(function() {
 					printDebug("Sip!");
 					audio.playPause();
-				}, endActionTime);
+				}, this.endActionTime);
 			}
 		}
 		else {
