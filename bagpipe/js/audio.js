@@ -9,7 +9,7 @@ var audio = {
 
 	setup: function() {
 		this.player = document.getElementsByTagName('audio')[0];
-		this.player.src = this.trackList[this.currentTrack];
+		this.player.src = "music/" + this.trackList[this.currentTrack];
 		this.player.load();
 	},
 
