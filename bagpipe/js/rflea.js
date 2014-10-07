@@ -13,16 +13,16 @@ var rFleaMAC = 47740, // enter your rFlea MAC address here (e.g. 47740)
 
 function loop(data) {
 	var pressure = data.analogIn[1];
-	if (packagesReceived == 1) bagpipe.setup(pressure);
+	if (packagesReceived == 1) bagPipe.setup(pressure);
 
 	//output current value
 	$("#debug").html(state + " at value " + pressure + "<br/>Volume: " + audio.getVolume());
 
-	bagpipe.process(pressure);
+	bagPipe.process(pressure);
 }
 
-function debug(message) {
-	$("#output").html($("#output").html() + message + "<br/>");
+function printDebug(message) {
+	if (debug) $("#output").html($("#output").html() + message + "<br/>");
 }
 
 ///////////////////////////////////////////////////////////////////////////////

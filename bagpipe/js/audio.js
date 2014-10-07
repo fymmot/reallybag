@@ -1,37 +1,48 @@
 $(document).ready(function() {
-	audio.player = document.getElementsByTagName('audio')[0];
+	audio.setup();
 });
 
 var audio = {
 	player: -1,
 	currentTrack: 0,
+	trackList: ["track0.mp3","track1.mp3","track2.mp3"],
+
+	setup: function() {
+		this.player = document.getElementsByTagName('audio')[0];
+		this.player.src = this.trackList[this.currentTrack];
+		this.player.load();
+	},
 
 	playPause: function() {
-		if (player.paused)
-			player.play();
+		if (this.player.paused)
+			this.player.play();
 		else
-			player.pause();
+			this.player.pause();
 	},
 
 	increaseVolume: function(intensity) {
-		player.volume = player.volume + intensity * 0.15;
+		this.player.volume = this.player.volume + intensity * 0.15;
 	},
 
 	decreaseVolume: function(intensity) {
-		player.volume = player.volume - intensity * 0.15;
+		this.player.volume = this.player.volume - intensity * 0.15;
 	},
 
 	getVolume: function() {
-		return player.volume;
+		return this.player.volume;
 	},
 
 	next: function() {
-		currentTrack = (currentTrack + 1) % 3;
-		player.src = "music/track" + currentTrack + ".mp3";
+		this.currentTrack = (this.currentTrack + 1) % 3;
+		this.player.src = "music/" + this.trackList[this.currentTrack];
+		this.player.load();
+		this.playPause();
 	},
 
 	previous: function() {
-		currentTrack = (currentTrack - 1) % 3;
-		player.src = "music/track" + currentTrack + ".mp3";
+		this.currentTrack = (this.trackList.length + this.currentTrack - 1) % 3;
+		this.player.src = "music/" + this.trackList[this.currentTrack];
+		this.player.load();
+		this.playPause();
 	},
 }

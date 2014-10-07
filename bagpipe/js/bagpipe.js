@@ -3,30 +3,31 @@ var bagPipe = {
 	state: "neutral",
     previousAction: "neutral",
     start: Date.now(),
+    basePressure: -1,
     maxPressure: -1,
     minPressure: -1,
     maxSipDuration: 200,
     maxPuffDuration: 300,
     timer: undefined,
-    basePressure: -1,
+    actionTimer: undefined,
 
     setup: function(pressure) {
-    	basePressure = pressure; //measure the ambient air pressure in the very beginning
-		maxPressure = pressure + 5;
-		minPressure = pressure - 5;
+    	this.basePressure = pressure; //measure the ambient air pressure in the very beginning
+		this.maxPressure = pressure + 5;
+		this.minPressure = pressure - 5;
 	},
 
 	process: function(pressure) {
-		if (pressure > maxPressure) maxPressure = pressure;
-		else if (pressure < minPressure) minPressure = pressure;
+		if (pressure > this.maxPressure) this.maxPressure = pressure;
+		else if (pressure < this.minPressure) this.minPressure = pressure;
 
-		switch (state) {
+		switch (this.state) {
 
 			case "neutral":
-				if (pressure > basePressure + noiseMargin) {
-					blowStart();
-				} else if (pressure < basePressure - noiseMargin) {
-					suckStart()
+				if (pressure > this.basePressure + this.noiseMargin) {
+					this.blowStart();
+				} else if (pressure < this.basePressure - this.noiseMargin) {
+					this.suckStart()
 				}
 				$("#value").height(0);
 				break;
@@ -34,102 +35,109 @@ var bagPipe = {
 			///////////////////////////////////////////////////////////////////////////////////////
 
 			case "blow":
-				if (pressure < basePressure + noiseMargin && pressure > basePressure - noiseMargin) {
-					blowStop();
-					neutralStart();
-				} else if (pressure < basePressure - noiseMargin) {
-					blowStop();
-					suckStart();
+				if (pressure < this.basePressure + this.noiseMargin && pressure > this.basePressure - this.noiseMargin) {
+					this.blowStop();
+					this.neutralStart();
+				} else if (pressure < this.basePressure - this.noiseMargin) {
+					this.blowStop();
+					this.suckStart();
 				}
-				var intensity = (pressure - basePressure) / (maxPressure - basePressure);
+				var intensity = (pressure - this.basePressure) / (this.maxPressure - this.basePressure);
 				$("#value").css("margin-top", -100 * intensity);
 				$("#value").height(100 * intensity);
-				increaseVolume(intensity);
+				audio.increaseVolume(intensity);
 				break;
 
 			///////////////////////////////////////////////////////////////////////////////////////
 
 			case "suck":
-				if (pressure > basePressure - noiseMargin && pressure < basePressure + noiseMargin) {
-					suckStop();
-					neutralStart();
-				} else if (pressure > basePressure + noiseMargin) {
-					suckStop();
-					blowStart();
+				if (pressure > this.basePressure - this.noiseMargin && pressure < this.basePressure + this.noiseMargin) {
+					this.suckStop();
+					this.neutralStart();
+				} else if (pressure > this.basePressure + this.noiseMargin) {
+					this.suckStop();
+					this.blowStart();
 				}
-				var intensity = (basePressure - pressure) / (basePressure - minPressure);
+				var intensity = (this.basePressure - pressure) / (this.basePressure - this.minPressure);
 				$("#value").height(100 * intensity);
-				decreaseVolume(intensity);
+				audio.decreaseVolume(intensity);
 				break;
 		}
 	},
 
 	setPreviousAction: function(action) {
-		previousAction = action;
-		clearTimeout(timer);
-		timer = setTimeout(function() {
-			previousAction = "neutral";
+		this.previousAction = action;
+		clearTimeout(this.timer);
+		clearTimeout(this.actionTimer);
+		var self = this;
+		this.timer = setTimeout(function() {
+			self.previousAction = "neutral";
 		}, 400);
 	},
 
 
 	stateChange: function() {
-		start = Date.now();
+		this.start = Date.now();
 	},
 
 	neutralStart: function() {
-		state = "neutral";
-		stateChange();
+		this.state = "neutral";
+		this.stateChange();
 	},
 
 	blowStart: function() {
-		state = "blow";
-		stateChange();
+		this.state = "blow";
+		this.stateChange();
 		$("#value").css("background", "red");
-		debug("Started blowing…")
+		printDebug("Started blowing…")
 	},
-	
+
 	blowStop: function() {
-		var duration = Date.now() - start;
-		if (duration < maxPuffDuration) {
-			if (previousAction == "puff") {
-				setPreviousAction("puffpuff");
-				debug("PuffPuff");
-				next();
+		var duration = Date.now() - this.start;
+		if (duration < this.maxPuffDuration) {
+			if (this.previousAction == "puff") {
+				this.setPreviousAction("puffpuff");
+				printDebug("PuffPuff");
+				audio.next();
 			} else {
-				debug("Puff!");
-				playPause();
-				setPreviousAction("puff");
+				this.setPreviousAction("puff");
+				this.actionTimer = setTimeout(function() {
+					printDebug("Puff!");
+					audio.playPause();
+				}, 400);
 			}
 		}
 		else {
-			debug("Stopped blowing after " + duration + " milliseconds");
-			setPreviousAction("blow");
+			printDebug("Stopped blowing after " + duration + " milliseconds");
+			this.setPreviousAction("blow");
 		}
 	},
 
 	suckStart: function() {
 		$("#value").css("background", "green");
-		state = "suck";
-		stateChange();
-		debug("Started sucking…")
+		this.state = "suck";
+		this.stateChange();
+		printDebug("Started sucking…")
 	},
 
 	suckStop: function() {
-		var duration = Date.now() - start;
-		if (duration < maxSipDuration) {
-			if (previousAction == "sip") {
-				setPreviousAction("sipsip");
-				debug("SipSip");
-				previous();
+		var duration = Date.now() - this.start;
+		if (duration < this.maxSipDuration) {
+			if (this.previousAction == "sip") {
+				this.setPreviousAction("sipsip");
+				printDebug("SipSip");
+				audio.previous();
 			} else {
-				debug("Sip!");
-				setPreviousAction("sip");
+				this.setPreviousAction("sip");
+				this.actionTimer = setTimeout(function() {
+					printDebug("Sip!");
+					audio.playPause();
+				}, 400);
 			}
 		}
 		else {
-			setPreviousAction("suck");
-			debug("Stopped sucking after " + duration + " milliseconds");
+			this.setPreviousAction("suck");
+			printDebug("Stopped sucking after " + duration + " milliseconds");
 		}
 	},
 }
