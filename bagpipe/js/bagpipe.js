@@ -1,5 +1,5 @@
 var bagPipe = {
-	noiseMargin: 2,
+	noiseMargin: 5,
 	state: "neutral",
     previousAction: "neutral",
     start: Date.now(),
@@ -10,6 +10,7 @@ var bagPipe = {
     maxPuffDuration: 300,
     timer: undefined,
     actionTimer: undefined,
+    values: ["n","n","n"],	// how many relevant pressure readings in a row before we care 
 
     setup: function(pressure) {
     	this.basePressure = pressure; //measure the ambient air pressure in the very beginning
@@ -18,6 +19,31 @@ var bagPipe = {
 	},
 
 	process: function(pressure) {
+		// save value and check if we got three same in a row to filter out noise
+		this.values.shift(1);
+		if(pressure>this.basePressure+this.noiseMargin){
+			// printDebug("pressure blow")
+			this.values.push("b");
+		}
+		else if(pressure <= this.basePressure + this.noiseMargin && pressure >= this.basePressure - this.noiseMargin){
+			// printDebug("pressure norm")
+
+			this.values.push("n");
+		}
+		else if(pressure < this.basePressure - this.noiseMargin){
+			// printDebug("pressure suck")
+
+			this.values.push("s");
+		}
+		// $("#debug").html(this.values);
+		for (var i = this.values.length - 1; i > 0; i--) {
+			if(this.values[i]!==this.values[i-1]){
+				return;
+			}
+		};
+
+		//// If we're here, we've gotten some good values in a row (i.e. not noise)
+
 		if (pressure > this.maxPressure) this.maxPressure = pressure;
 		else if (pressure < this.minPressure) this.minPressure = pressure;
 
@@ -35,7 +61,7 @@ var bagPipe = {
 			///////////////////////////////////////////////////////////////////////////////////////
 
 			case "blow":
-				if (pressure < this.basePressure + this.noiseMargin && pressure > this.basePressure - this.noiseMargin) {
+				if (pressure <= this.basePressure + this.noiseMargin && pressure >= this.basePressure - this.noiseMargin) {
 					this.blowStop();
 					this.neutralStart();
 				} else if (pressure < this.basePressure - this.noiseMargin) {
@@ -51,7 +77,7 @@ var bagPipe = {
 			///////////////////////////////////////////////////////////////////////////////////////
 
 			case "suck":
-				if (pressure > this.basePressure - this.noiseMargin && pressure < this.basePressure + this.noiseMargin) {
+				if (pressure >= this.basePressure - this.noiseMargin && pressure <= this.basePressure + this.noiseMargin) {
 					this.suckStop();
 					this.neutralStart();
 				} else if (pressure > this.basePressure + this.noiseMargin) {

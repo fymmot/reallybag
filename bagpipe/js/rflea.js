@@ -15,10 +15,12 @@ function loop(data) {
 	var pressure = data.analogIn[1];
 	if (packagesReceived == 1) bagPipe.setup(pressure);
 
-	//output current value
-	$("#debug").html(state + " at value " + pressure + "<br/>Volume: " + audio.getVolume());
+	// printDebug(audio.getVolume)
+	// //output current value
+	$("#debug").html(bagPipe.state+ " at value " + pressure + "<br/>Volume: " + audio.getVolume());
 
 	bagPipe.process(pressure);
+	// printDebug("done loop")
 }
 
 function printDebug(message) {
@@ -47,6 +49,7 @@ function onMessage(data) {
 
 	var tx_message = toString(LED_value,1,2,3,4,5,6,7);
 	var tx_successful = AntInterface.send(tx_message); //returns true if format is correct
+
 	if (debug && verbose) AndroidInterface.showToast(tx_message, tx_successful);
 }
 

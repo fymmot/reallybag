@@ -29,6 +29,7 @@ var audio = {
 	},
 
 	getVolume: function() {
+		if (this.player === undefined) return -1;
 		return this.player.volume;
 	},
 
