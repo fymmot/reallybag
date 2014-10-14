@@ -26,6 +26,7 @@
 
 #include <rFlea_Arduino.h>
 #include <EEPROM.h>
+#define COMMON_ANODE
 
 //rFlea Object and constructor.
 rFlea_Arduino rflea = rFlea_Arduino();
@@ -51,6 +52,7 @@ void setup() {
   //Set pullup resistors
   digitalWrite(12, LOW);  
   
+  //turn the RGB LED off  
   analogWrite(greenPin,255); //green
   analogWrite(bluePin,255); //blue
   analogWrite(redPin,0); //red 0 = full strength
@@ -78,19 +80,15 @@ void setup() {
 void loop() {
   //Update rFlea every loop.
   rflea.update();
-  
-  
-  for(int fadeValue = 0 ; fadeValue <= 255; fadeValue +=5) { 
-    // sets the value (range from 0 to 255):
-    analogWrite(redPin, fadeValue);         
-    // wait for 30 milliseconds to see the dimming effect    
-    delay(30);                            
-  } 
+
+}
+
+void puffEvent() {
+  analogWrite(redPin, 0);
 
   // fade out from max to min in increments of 5 points:
   for(int fadeValue = 255 ; fadeValue >= 0; fadeValue -=5) { 
-    // sets the value (range from 0 to 255):
-    analogWrite(redPin, fadeValue);         
+    setColor(fadeValue, 0, 0);
     // wait for 30 milliseconds to see the dimming effect    
     delay(30);                            
   } 
@@ -113,22 +111,20 @@ void onSync(){
   rflea.send(SENSOR_RX,message);
 }
 
+void setColor(int red, int green, int blue) {
+#ifdef COMMON_ANODE
+  red = 255 - red;
+  green = 255 - green;
+  blue = 255 - blue;
+#endif
+  analogWrite(redPin, red);
+  analogWrite(greenPin, green);
+  analogWrite(bluePin, blue); 
+}
+
 
 //This Function will be called everytime we receive something
 void onMessageSensorRx(byte* message){ 
-  //Change to true if you want to print the data received 
-  if(true){
-    Serial.println("");
-    Serial.print("Rx from: ");
-    for(int i=0;i<8;i++){
-      Serial.print(message[i],HEX);    
-      Serial.print(" ");
-    }  
-    Serial.println("");
-  }
 
-  if (message[0]==0)
-  digitalWrite(led, LOW); //If the first byte is 0 then LED off
-  else 
-    digitalWrite(led, HIGH); //If the first byte is other than 0 then LED on
+  if (message[0]==1) puffEvent();
 }
