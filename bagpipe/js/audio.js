@@ -46,4 +46,12 @@ var audio = {
 		this.player.load();
 		this.playPause();
 	},
+
+	rewind: function(duration) {
+		this.player.currentTime -= duration; //duration in seconds, depending on intensity
+	},
+
+	fastForward: function(duration) {
+		this.player.currentTime += duration; //duration in seconds, depending on intensity
+	},
 }
