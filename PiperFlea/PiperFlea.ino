@@ -32,6 +32,9 @@ rFlea_Arduino rflea = rFlea_Arduino();
 unsigned int serialNumber;
 
 int led = 13;
+int redPin = 11;
+int greenPin = 3;
+int bluePin = 10;
 
 void setup() {
   //rFlea object uses Serial and need to be at 57600
@@ -43,20 +46,14 @@ void setup() {
   pinMode(led, OUTPUT);     
 
   //Set digital and analog pins
-//  pinMode(3,OUTPUT);
-//  pinMode(10,OUTPUT);
-//  pinMode(11,OUTPUT);
   pinMode(12,OUTPUT);
 
   //Set pullup resistors
-//  digitalWrite(3, HIGH);  
-//  digitalWrite(10, LOW); 
-//  digitalWrite(11, LOW); 
   digitalWrite(12, LOW);  
   
-  analogWrite(3,128); //green
-  analogWrite(10,128); //blue
-  analogWrite(11,255); //red
+  analogWrite(greenPin,255); //green
+  analogWrite(bluePin,255); //blue
+  analogWrite(redPin,0); //red 0 = full strength
 
   //Registrer the functions that will be called to help syncronisation,
   // low power and receive data.
@@ -81,6 +78,22 @@ void setup() {
 void loop() {
   //Update rFlea every loop.
   rflea.update();
+  
+  
+  for(int fadeValue = 0 ; fadeValue <= 255; fadeValue +=5) { 
+    // sets the value (range from 0 to 255):
+    analogWrite(redPin, fadeValue);         
+    // wait for 30 milliseconds to see the dimming effect    
+    delay(30);                            
+  } 
+
+  // fade out from max to min in increments of 5 points:
+  for(int fadeValue = 255 ; fadeValue >= 0; fadeValue -=5) { 
+    // sets the value (range from 0 to 255):
+    analogWrite(redPin, fadeValue);         
+    // wait for 30 milliseconds to see the dimming effect    
+    delay(30);                            
+  } 
 }
 
 //In case we are a Sensor, this function will be called
