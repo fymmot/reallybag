@@ -126,12 +126,13 @@ void actionControl() {
     previousAction = 0;
   }
   else { //din't run out of time yet
+    int changedColorValue = (int) ((((float) millis() - actionStart) / endActionTime) * 255);
     switch (previousAction) {
     case PUFF:
-      setColor(((millis() - actionStart) / endActionTime) * 255,255,255);
+      setColor(changedColorValue,255,255);
       break;
     case SIP:
-      setColor(255,255,((millis() - actionStart) / endActionTime) * 255);
+      setColor(255,255,changedColorValue);
       break;
     }    
   } 
@@ -146,14 +147,16 @@ void setColor(int r, int g, int b) {
 void loop() {
   //Update rFlea every loop.
   rflea.update();
-//  currentPressure = unsigned(analogRead(A5)/4);
-  
+  // currentPressure = unsigned(analogRead(A5)/4);
+  //<<<<<<<<<<<<<<<<<<<<<< FAKE START >>>>>>>>>>>>>>>>>>>>>>>>>>>
   if (millis() % 1400 >= 1000 && millis()%1400 <= 1400) {
     currentPressure = 10;
   }
   else {
     currentPressure = 0;
   }
+  //<<<<<<<<<<<<<<<<<<<<<< FAKE END >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  
   int pressure = currentPressure;
 
   valueBuffer[0] = valueBuffer[1]; //this is the shift!
@@ -272,9 +275,7 @@ void setPreviousAction(int action) {
 }
 
 void blowStop() {
-  Serial.println("blowStop");
-  int duration = millis() - actionStart;
-  Serial.println(duration);
+  int duration = millis() - startTime;
   if (duration < maxPuffDuration) {
     if (previousAction == PUFF) {
       setPreviousAction(PUFFPUFF);
@@ -292,6 +293,7 @@ void blowStop() {
 
 void suckStart() {
   state = SUCK;
+  startTime = millis();
 }
 
 void suckStop() {
@@ -319,7 +321,6 @@ void sendEvent(int eventCode) {
 }
 
 void puffEvent() {
-  digitalWrite(led,HIGH);
   sendEvent(PUFF);
 }
 
