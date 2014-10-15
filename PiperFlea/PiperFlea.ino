@@ -33,8 +33,8 @@ unsigned int serialNumber;
 
 int led = 13;
 int redPin = 11;
-int bluePin = 10;
-int greenPin = 3;
+int bluePin = 3;
+int greenPin = 10;
 
 int basePressure;
 int maxPressure;
@@ -57,7 +57,7 @@ int volume;
 int noiseMargin = 2;
 int state = NEUTRAL;
 int previousAction = 0;
-int maxSipDuration = 300;
+int maxSipDuration = 400;
 int maxPuffDuration = 400;
 int endActionTime = 400;	// how long to wait for the next action for combining actions
 char valueBuffer[2] = {
@@ -65,6 +65,10 @@ char valueBuffer[2] = {
 long startTime;
 long actionStart;
 int currentPressure;
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+// SETUP
+//////////////////////////////////////////////////////////////////////////////////////////////
 
 void setup() {
   //rFlea object uses Serial and need to be at 57600
@@ -81,7 +85,7 @@ void setup() {
   setColor(255,255,255);
 
 
-  //Registrer the functions that will be called to help syncronisation,
+  //Register the functions that will be called to help syncronisation,
   // low power and receive data.
   rflea.register_onSync(onSync);
   rflea.register_onMessageSensorRx(onMessageSensorRx);
@@ -106,60 +110,30 @@ void setup() {
 
 void setupBagPipe() {
   int pressure = unsigned(analogRead(A5)/4);
-  basePressure = 0;//pressure; //measure the ambient air pressure in the very beginning
+  basePressure = pressure; //measure the ambient air pressure in the very beginning
   maxPressure = basePressure + 5;
   minPressure = basePressure - 5; 
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void actionControl() {
-  if (millis() > actionStart + endActionTime) { //we ran out of time already
-    switch (previousAction) {
-    case PUFF:
-      puffEvent();
-      break;
-    case SIP:
-      sipEvent();
-      break;
-    }
-    previousAction = 0;
-  }
-  else { //din't run out of time yet
-    int changedColorValue = (int) ((((float) millis() - actionStart) / endActionTime) * 255);
-    switch (previousAction) {
-    case PUFF:
-      setColor(changedColorValue,255,255);
-      break;
-    case SIP:
-      setColor(255,255,changedColorValue);
-      break;
-    }    
-  } 
-}
-
-void setColor(int r, int g, int b) {
-  analogWrite(redPin, r);
-  analogWrite(greenPin, g);
-  analogWrite(bluePin, b);  
-}
+//////////////////////////////////////////////////////////////////////////////////////////////
+// LOOP
+//////////////////////////////////////////////////////////////////////////////////////////////
 
 void loop() {
   //Update rFlea every loop.
   rflea.update();
-  // currentPressure = unsigned(analogRead(A5)/4);
-  //<<<<<<<<<<<<<<<<<<<<<< FAKE START >>>>>>>>>>>>>>>>>>>>>>>>>>>
-  if (millis() % 1400 >= 1000 && millis()%1400 <= 1400) {
-    currentPressure = 10;
-  }
-  else {
-    currentPressure = 0;
-  }
-  //<<<<<<<<<<<<<<<<<<<<<< FAKE END >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  currentPressure = unsigned(analogRead(A5)/4);
+
+  //<<<<<<<<<<<<<<<<<<<<<<<<<<<<< FAKE START >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  // REMOVE THIS IF YOU WANT ACTUAL VALUES FROM THE PRESSURE SENSOR!!!
+  fake();
+  //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< FAKE END >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
   
   int pressure = currentPressure;
 
   valueBuffer[0] = valueBuffer[1]; //this is the shift!
+  
+  checkEventsAndFeedback();
 
   if(pressure > basePressure + noiseMargin){
     valueBuffer[1] = 'b';
@@ -176,9 +150,30 @@ void loop() {
     }
   };
   processPressure(pressure); //called only if we got nice values and not just noise  
-  actionControl();
 }
 
+void checkEventsAndFeedback() {
+  if (millis() > actionStart + endActionTime) { //we ran out of time already
+    //send the action that has been performed to the phone to trigger audio control
+    sendEvent(previousAction);
+    previousAction = 0; //reset the action to neutral
+    setColor(255,255,255); //turn off the lights
+  }
+  else { //din't run out of time yet
+    int changedColorValue = (int) ((((float) millis() - actionStart) / endActionTime) * 255);
+    switch (previousAction) {
+    case PUFF:
+      setColor(changedColorValue,255,255);
+      break;
+    case PUFFPUFF:
+      setColor(255,changedColorValue,255);
+      break;
+    case SIP:
+      setColor(255,255,changedColorValue);
+      break;
+    }    
+  } 
+}
 
 void processPressure(int pressure) {
   //// If we're here, we've gotten some good values in a row (i.e. not noise)
@@ -230,7 +225,9 @@ void processPressure(int pressure) {
 }
 
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
+// MESSAGING
+//////////////////////////////////////////////////////////////////////////////////////////////
 
 //In case we are a Sensor, this function will be called
 // every time we are ready to send next message. Use the
@@ -257,14 +254,15 @@ void onMessageSensorRx(byte* message){
   //Change to true if you want to print the data received 
 }
 
-//////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////
+// STATES
+//////////////////////////////////////////////////////////////////////////////////////////////
 
 void neutralStart() {
   state = NEUTRAL;
 }
 
 void blowStart() {
-  Serial.println("blowStart");
   state = BLOW;
   startTime = millis();
 }
@@ -297,11 +295,12 @@ void suckStart() {
 }
 
 void suckStop() {
-  int duration = millis() - actionStart;
+  int duration = millis() - startTime;
   if (duration < maxSipDuration) {
     if (previousAction == SIP) {
       setPreviousAction(SIPSIP);
       // send sipsip to js
+      sendEvent(SIPSIP);
     } 
     else {
       setPreviousAction(SIP);
@@ -320,13 +319,50 @@ void sendEvent(int eventCode) {
   event = eventCode;
 }
 
-void puffEvent() {
-  sendEvent(PUFF);
+void setColor(int r, int g, int b) {
+  analogWrite(redPin, r);
+  analogWrite(greenPin, g);
+  analogWrite(bluePin, b);  
 }
 
-void sipEvent() {
-  sendEvent(SIP);
+//////////////////////////////////////////////////////////////////////////////////////////////
+// FAKE IT UNTIL YOU MAKE IT
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+void fake() {
+  //this method sends a fake puff, a fake sip and a fake puffpuff
+  
+  basePressure = 10;
+  maxPressure = 15;
+  minPressure = 5; 
+  
+  // PUFF  
+  if (millis()%10000 >= 1000 && millis()%10000 <= 1300) {
+    currentPressure = maxPressure;
+  }
+  else if (millis()%10000 >= 1300 && millis()%10000 <= 4000) {
+    currentPressure = basePressure;
+  }
+  
+  // SIP
+  else if (millis()%10000 >= 4000 && millis()%10000 <= 4300) {
+    currentPressure = minPressure;
+  }
+  else if (millis()%10000 >= 4300 && millis()%10000 <= 7000) {
+    currentPressure = basePressure;
+  }
+  
+  // PUFFPUFF
+  else if (millis()%10000 >= 7000 && millis()%10000 <= 7300) {
+    currentPressure = maxPressure;
+  }
+  else if (millis()%10000 >= 7300 && millis()%10000 <= 7400) {
+    currentPressure = basePressure;
+  }
+  else if (millis()%10000 >= 7400 && millis()%10000 <= 7700) {
+    currentPressure = maxPressure;
+  }
+  else {
+    currentPressure = basePressure;
+  }
 }
-
-
-
