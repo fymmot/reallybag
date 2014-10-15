@@ -32,9 +32,9 @@ rFlea_Arduino rflea = rFlea_Arduino();
 unsigned int serialNumber;
 
 int led = 13;
-int redPin = 3;
+int redPin = 11;
 int bluePin = 10;
-int greenPin = 11;
+int greenPin = 3;
 int dddd = 0;
 
 void setup() {
@@ -47,16 +47,14 @@ void setup() {
   pinMode(led, OUTPUT);     
 
   //Set digital and analog pins
-  pinMode(3,OUTPUT);
-  pinMode(10,OUTPUT);
-  pinMode(11,OUTPUT);
   pinMode(12,OUTPUT);
 
   //Set pullup resistors
-  analogWrite(3, HIGH);  
-  analogWrite(10, HIGH); 
-  analogWrite(11, HIGH); 
-  analogWrite(12, HIGH);  
+  digitalWrite(12, HIGH);  
+  analogWrite(redPin,255);
+  analogWrite(bluePin,255);
+  analogWrite(greenPin,255);
+  
 
   //Registrer the functions that will be called to help syncronisation,
   // low power and receive data.
@@ -116,12 +114,27 @@ void onMessageSensorRx(byte* message){
   }
 
   // Send colors to rgb led
-  analogWrite(A3, message[0]);
-  analogWrite(greenPin, message[1]);
-  analogWrite(bluePin, message[2]);
+  if(message[0]==1) puffEvent();
   //Serial.println(message[0]);
 //  if (message[0]==0)
   //digitalWrite(led, LOW); //If the first byte is 0 then LED off
   //else 
     //digitalWrite(led, HIGH); //If the first byte is other than 0 then LED on
+}
+
+void setColor(int red, int green, int blue) {
+  analogWrite(redPin, red);
+  analogWrite(greenPin, green);
+  analogWrite(bluePin, blue); 
+}
+
+void puffEvent() {
+  analogWrite(redPin, 255);
+
+  // fade out from max to min in increments of 5 points:
+  for(int fadeValue = 0 ; fadeValue <= 255; fadeValue +=5) { 
+    setColor(fadeValue, 255, 255);
+    // wait for 30 milliseconds to see the dimming effect    
+    delay(30);                            
+  } 
 }

@@ -26,7 +26,6 @@
 
 #include <rFlea_Arduino.h>
 #include <EEPROM.h>
-#define COMMON_ANODE
 
 //rFlea Object and constructor.
 rFlea_Arduino rflea = rFlea_Arduino();
@@ -34,8 +33,38 @@ unsigned int serialNumber;
 
 int led = 13;
 int redPin = 11;
-int greenPin = 3;
 int bluePin = 10;
+int greenPin = 3;
+
+int basePressure;
+int maxPressure;
+int minPressure;
+
+//ACTIONS
+const int PUFF = 1;
+const int PUFFPUFF = 2;
+const int SIP = 3;
+const int SIPSIP = 4;
+
+//STATES
+const int NEUTRAL = 0;
+const int BLOW = 1;
+const int SUCK = 2;
+
+int event;
+int volume;
+
+int noiseMargin = 2;
+int state = NEUTRAL;
+int previousAction = 0;
+int maxSipDuration = 300;
+int maxPuffDuration = 400;
+int endActionTime = 400;	// how long to wait for the next action for combining actions
+char valueBuffer[2] = {
+  'n','n'}; // how many relevant pressure readings in a row before we care
+long startTime;
+long actionStart;
+int currentPressure;
 
 void setup() {
   //rFlea object uses Serial and need to be at 57600
@@ -46,16 +75,11 @@ void setup() {
   // initialize the digital pin as an output.
   pinMode(led, OUTPUT);     
 
-  //Set digital and analog pins
-  pinMode(12,OUTPUT);
-
   //Set pullup resistors
-  digitalWrite(12, LOW);  
-  
-  //turn the RGB LED off  
-  analogWrite(greenPin,255); //green
-  analogWrite(bluePin,255); //blue
-  analogWrite(redPin,0); //red 0 = full strength
+  digitalWrite(12, HIGH);
+
+  setColor(255,255,255);
+
 
   //Registrer the functions that will be called to help syncronisation,
   // low power and receive data.
@@ -64,67 +88,244 @@ void setup() {
 
   //Set our SENSOR_RX channel. SENSOR_RX can transmit and receive
   rflea.rFlea_profile(SENSOR_RX);
-  
+
   //Get the unique serial number from this rFlea and print it
   serialNumber=rflea.my_serial_number();
   Serial.println(" ");
   Serial.print("S/N: ");
   Serial.println(serialNumber);
-  
+
   //Reset and Initialize the ANT+.
   rflea.init();
 
   //Connect!!
   rflea.connect(SENSOR_RX);
+
+  setupBagPipe(); 
 }
+
+void setupBagPipe() {
+  int pressure = unsigned(analogRead(A5)/4);
+  basePressure = 0;//pressure; //measure the ambient air pressure in the very beginning
+  maxPressure = basePressure + 5;
+  minPressure = basePressure - 5; 
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void actionControl() {
+  if (millis() > actionStart + endActionTime) { //we ran out of time already
+    switch (previousAction) {
+    case PUFF:
+      puffEvent();
+      break;
+    case SIP:
+      sipEvent();
+      break;
+    }
+    previousAction = 0;
+  }
+  else { //din't run out of time yet
+    switch (previousAction) {
+    case PUFF:
+      setColor(((millis() - actionStart) / endActionTime) * 255,255,255);
+      break;
+    case SIP:
+      setColor(255,255,((millis() - actionStart) / endActionTime) * 255);
+      break;
+    }    
+  } 
+}
+
+void setColor(int r, int g, int b) {
+  analogWrite(redPin, r);
+  analogWrite(greenPin, g);
+  analogWrite(bluePin, b);  
+}
+
 void loop() {
   //Update rFlea every loop.
   rflea.update();
+//  currentPressure = unsigned(analogRead(A5)/4);
+  
+  if (millis() % 1400 >= 1000 && millis()%1400 <= 1400) {
+    currentPressure = 10;
+  }
+  else {
+    currentPressure = 0;
+  }
+  int pressure = currentPressure;
 
+  valueBuffer[0] = valueBuffer[1]; //this is the shift!
+
+  if(pressure > basePressure + noiseMargin){
+    valueBuffer[1] = 'b';
+  }
+  else if(pressure <= basePressure + noiseMargin && pressure >= basePressure - noiseMargin) {
+    valueBuffer[1] = 'n';
+  }
+  else if(pressure < basePressure - noiseMargin) {
+    valueBuffer[1] = 's';
+  }
+  for (int i = 1; i > 0; i--) {
+    if(valueBuffer[i] != valueBuffer[i-1]){
+      //return;
+    }
+  };
+  processPressure(pressure); //called only if we got nice values and not just noise  
+  actionControl();
 }
 
-void puffEvent() {
-  analogWrite(redPin, 0);
 
-  // fade out from max to min in increments of 5 points:
-  for(int fadeValue = 255 ; fadeValue >= 0; fadeValue -=5) { 
-    setColor(fadeValue, 0, 0);
-    // wait for 30 milliseconds to see the dimming effect    
-    delay(30);                            
-  } 
+void processPressure(int pressure) {
+  //// If we're here, we've gotten some good values in a row (i.e. not noise)
+  float intensity;
+
+  if (pressure > maxPressure) maxPressure = pressure;
+  else if (pressure < minPressure) minPressure = pressure;
+
+  switch (state) {
+
+  case NEUTRAL:
+    if (pressure > basePressure + noiseMargin) {
+      blowStart();
+    } 
+    else if (pressure < basePressure - noiseMargin) {
+      suckStart();
+    }
+    break;
+
+    ///////////////////////////////////////////////////////////////////////////////////////
+
+  case BLOW:
+    if (pressure <= basePressure + noiseMargin && pressure >= basePressure - noiseMargin) {
+      blowStop();
+      neutralStart();
+    } 
+    else if (pressure < basePressure - noiseMargin) {
+      blowStop();
+      suckStart();
+    }
+    intensity = (pressure - basePressure) / (maxPressure - basePressure);
+    break;
+
+    ///////////////////////////////////////////////////////////////////////////////////////
+
+  case SUCK:
+    if (pressure >= basePressure - noiseMargin && pressure <= basePressure + noiseMargin) {
+      suckStop();
+      neutralStart();
+    } 
+    else if (pressure > basePressure + noiseMargin) {
+      suckStop();
+      blowStart();
+    }
+    intensity = (basePressure - pressure) / (basePressure - minPressure);
+
+    break;
+  }
 }
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //In case we are a Sensor, this function will be called
 // every time we are ready to send next message. Use the
 // function rFlea.send(byte[]) to send the 8 bytes of data
 void onSync(){
   byte  message[8];
-  message[0] = unsigned(analogRead(A4)/4);//arduino is 10 bits, 1byte is 8 bits.
+  message[0] = volume;//unsigned(analogRead(A4)/4);//arduino is 10 bits, 1byte is 8 bits.
   //Dividing by 4 we remove 2 bits
-  message[1] = unsigned(analogRead(A5)/4);
+  message[1] = event;////unsigned(analogRead(A5)/4);
   message[2] = 0;//digitalRead(3);
   message[3] = 0;//digitalRead(10);
   message[4] = 0;//digitalRead(11);
   message[5] = 0;//digitalRead(12);
   message[6] = 0; //Empty
-  message[7] = 0; //Empty
+  message[7] = currentPressure; //Empty
   rflea.send(SENSOR_RX,message);
-}
 
-void setColor(int red, int green, int blue) {
-#ifdef COMMON_ANODE
-  red = 255 - red;
-  green = 255 - green;
-  blue = 255 - blue;
-#endif
-  analogWrite(redPin, red);
-  analogWrite(greenPin, green);
-  analogWrite(bluePin, blue); 
+  event = 0; // do not send the same shit twice
 }
 
 
 //This Function will be called everytime we receive something
-void onMessageSensorRx(byte* message){ 
-
-  if (message[0]==1) puffEvent();
+void onMessageSensorRx(byte* message){   
+  //Change to true if you want to print the data received 
 }
+
+//////////////////////////////////////////////////////////////////////////////////////
+
+void neutralStart() {
+  state = NEUTRAL;
+}
+
+void blowStart() {
+  Serial.println("blowStart");
+  state = BLOW;
+  startTime = millis();
+}
+
+void setPreviousAction(int action) {
+  previousAction = action;
+  actionStart = millis();
+}
+
+void blowStop() {
+  Serial.println("blowStop");
+  int duration = millis() - actionStart;
+  Serial.println(duration);
+  if (duration < maxPuffDuration) {
+    if (previousAction == PUFF) {
+      setPreviousAction(PUFFPUFF);
+      //send puffpuff to javascript
+      sendEvent(PUFFPUFF);
+    } 
+    else {
+      setPreviousAction(PUFF);
+    }
+  }
+  else {
+    // lights out
+  }
+}
+
+void suckStart() {
+  state = SUCK;
+}
+
+void suckStop() {
+  int duration = millis() - actionStart;
+  if (duration < maxSipDuration) {
+    if (previousAction == SIP) {
+      setPreviousAction(SIPSIP);
+      // send sipsip to js
+    } 
+    else {
+      setPreviousAction(SIP);
+    }
+  }
+  else {
+    // lights out
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+// EVENTS AND MORE BEAUTIFUL STUFF
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+void sendEvent(int eventCode) {
+  event = eventCode;
+}
+
+void puffEvent() {
+  digitalWrite(led,HIGH);
+  sendEvent(PUFF);
+}
+
+void sipEvent() {
+  sendEvent(SIP);
+}
+
+
+
