@@ -4,7 +4,7 @@
 
 var rFleaMAC = 47740, // enter your rFlea MAC address here (e.g. 47740)
     frequency = 32, // use higher frequency for better response. Standard is 4, higher frequencies use more batteries
-    debug = false, // outputs debug messages on the phone. Set to true if something doesn't work out
+    debug = true, // outputs debug messages on the phone. Set to true if something doesn't work out
     verbose = false; // outputs even more debug messages (use with care!)
 
  // test colors
