@@ -32,6 +32,10 @@ rFlea_Arduino rflea = rFlea_Arduino();
 unsigned int serialNumber;
 
 int led = 13;
+int redPin = 3;
+int bluePin = 10;
+int greenPin = 11;
+int dddd = 0;
 
 void setup() {
   //rFlea object uses Serial and need to be at 57600
@@ -49,10 +53,10 @@ void setup() {
   pinMode(12,OUTPUT);
 
   //Set pullup resistors
-  digitalWrite(3, LOW);  
-  digitalWrite(10, LOW); 
-  digitalWrite(11, LOW); 
-  digitalWrite(12, LOW);  
+  analogWrite(3, HIGH);  
+  analogWrite(10, HIGH); 
+  analogWrite(11, HIGH); 
+  analogWrite(12, HIGH);  
 
   //Registrer the functions that will be called to help syncronisation,
   // low power and receive data.
@@ -77,6 +81,7 @@ void setup() {
 void loop() {
   //Update rFlea every loop.
   rflea.update();
+  
 }
 
 //In case we are a Sensor, this function will be called
@@ -98,7 +103,7 @@ void onSync(){
 
 
 //This Function will be called everytime we receive something
-void onMessageSensorRx(byte* message){ 
+void onMessageSensorRx(byte* message){   
   //Change to true if you want to print the data received 
   if(true){
     Serial.println("");
@@ -110,8 +115,13 @@ void onMessageSensorRx(byte* message){
     Serial.println("");
   }
 
-  if (message[0]==0)
-  digitalWrite(led, LOW); //If the first byte is 0 then LED off
-  else 
-    digitalWrite(led, HIGH); //If the first byte is other than 0 then LED on
+  // Send colors to rgb led
+  analogWrite(A3, message[0]);
+  analogWrite(greenPin, message[1]);
+  analogWrite(bluePin, message[2]);
+  //Serial.println(message[0]);
+//  if (message[0]==0)
+  //digitalWrite(led, LOW); //If the first byte is 0 then LED off
+  //else 
+    //digitalWrite(led, HIGH); //If the first byte is other than 0 then LED on
 }
