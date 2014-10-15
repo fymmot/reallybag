@@ -7,17 +7,17 @@ var rFleaMAC = 47740, // enter your rFlea MAC address here (e.g. 47740)
     debug = true, // outputs debug messages on the phone. Set to true if something doesn't work out
     verbose = false; // outputs even more debug messages (use with care!)
 
-var PUFF = 1;
-var PUFFPUFF = 2;
-var SIP = 3;
-var SIPSIP = 4;
+var PUFF = 1,
+    PUFFPUFF = 2,
+    SIP = 3,
+    SIPSIP = 4;
 
 ///////////////////////////////////////////////////////////////////////////////
 // HERE'S WHERE THE MAGIC HAPPENS
 ///////////////////////////////////////////////////////////////////////////////
 
 function loop(data) {
-	var volume = data[0];
+	audio.setVolume(data[0] / 100);
 	switch (data[1]) {
 		case PUFF: 
 			audio.playPause();
@@ -33,7 +33,7 @@ function loop(data) {
 			break;
 	}
 
-	// //output current value
+	//output current value
 	$("#debug").html(data[0] + " " + data[1] + " " + data[7]);
 	
 }

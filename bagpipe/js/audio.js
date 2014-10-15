@@ -20,13 +20,10 @@ var audio = {
 			this.player.pause();
 	},
 
-	increaseVolume: function(intensity) {
-		this.player.volume = this.player.volume + intensity * 0.15;
-	},
-
-	decreaseVolume: function(intensity) {
-		this.player.volume = this.player.volume - intensity * 0.15;
-	},
+	setVolume: function(volume) {
+		if (this.player === undefined) return -1;
+		this.player.volume = volume;
+	}
 
 	getVolume: function() {
 		if (this.player === undefined) return -1;

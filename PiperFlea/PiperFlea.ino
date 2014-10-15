@@ -52,7 +52,8 @@ const int BLOW = 1;
 const int SUCK = 2;
 
 int event;
-int volume;
+double volume = 0.5;
+double volumeChangeRatio = 0.002;
 
 int noiseMargin = 2;
 int state = NEUTRAL;
@@ -65,6 +66,10 @@ char valueBuffer[2] = {
 long startTime;
 long actionStart;
 int currentPressure;
+
+//DEBUG
+int counter = 0;
+boolean ledOn = false; 
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 // SETUP
@@ -122,6 +127,11 @@ void setupBagPipe() {
 void loop() {
   //Update rFlea every loop.
   rflea.update();
+  
+//  if (counter%100 < 50) digitalWrite(led,HIGH);
+//  else digitalWrite(led,LOW);
+//  counter++;
+  
   currentPressure = unsigned(analogRead(A5)/4);
 
   //<<<<<<<<<<<<<<<<<<<<<<<<<<<<< FAKE START >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -132,8 +142,6 @@ void loop() {
   int pressure = currentPressure;
 
   valueBuffer[0] = valueBuffer[1]; //this is the shift!
-  
-  checkEventsAndFeedback();
 
   if(pressure > basePressure + noiseMargin){
     valueBuffer[1] = 'b';
@@ -146,39 +154,45 @@ void loop() {
   }
   for (int i = 1; i > 0; i--) {
     if(valueBuffer[i] != valueBuffer[i-1]){
-      //return;
+      return;
     }
   };
   processPressure(pressure); //called only if we got nice values and not just noise  
+  checkEventsAndFeedback();
 }
 
 void checkEventsAndFeedback() {
   if (millis() > actionStart + endActionTime) { //we ran out of time already
-    //send the action that has been performed to the phone to trigger audio control
-    sendEvent(previousAction);
-    previousAction = 0; //reset the action to neutral
-    setColor(255,255,255); //turn off the lights
+    if (previousAction !=0) { //we already got something happening
+      //send the action that has been performed to the phone to trigger audio control
+      sendEvent(previousAction);
+      setColor(255,255,255); //turn off the lights
+      previousAction = 0; //reset the action to neutral
+    }
   }
-  else { //din't run out of time yet
-    int changedColorValue = (int) ((((float) millis() - actionStart) / endActionTime) * 255);
+  else { //didn't run out of time yet
+    int fadeColorValue = (int) ((((float) millis() - actionStart) / endActionTime) * 255);
     switch (previousAction) {
     case PUFF:
-      setColor(changedColorValue,255,255);
+      setColor(fadeColorValue,255,255);
       break;
     case PUFFPUFF:
-      setColor(255,changedColorValue,255);
+      setColor(fadeColorValue,255,255);
       break;
     case SIP:
-      setColor(255,255,changedColorValue);
+      setColor(255,255,fadeColorValue);
+      break;
+    case SIPSIP:
+      setColor(255,255,fadeColorValue);
       break;
     }    
-  } 
+  }
 }
 
 void processPressure(int pressure) {
   //// If we're here, we've gotten some good values in a row (i.e. not noise)
-  float intensity;
-
+  double intensity;
+  int fadeColorValue;
   if (pressure > maxPressure) maxPressure = pressure;
   else if (pressure < minPressure) minPressure = pressure;
 
@@ -196,6 +210,13 @@ void processPressure(int pressure) {
     ///////////////////////////////////////////////////////////////////////////////////////
 
   case BLOW:
+    if (millis() - startTime > maxPuffDuration) { //long blow
+      intensity = (double) (pressure - basePressure) / (maxPressure - basePressure);
+      volume = volume + intensity * volumeChangeRatio;
+      if (volume > 1) volume = 1;
+      fadeColorValue = (int) ((1 - volume) * 255);
+      setColor(fadeColorValue,255,255);
+    }
     if (pressure <= basePressure + noiseMargin && pressure >= basePressure - noiseMargin) {
       blowStop();
       neutralStart();
@@ -204,12 +225,18 @@ void processPressure(int pressure) {
       blowStop();
       suckStart();
     }
-    intensity = (pressure - basePressure) / (maxPressure - basePressure);
     break;
 
     ///////////////////////////////////////////////////////////////////////////////////////
 
   case SUCK:
+    if (millis() - startTime > maxSipDuration) { //long suck
+      intensity = (double) (basePressure - pressure) / (basePressure - minPressure);
+      volume = volume - intensity * volumeChangeRatio;
+      if (volume < 0) volume = 0;
+      fadeColorValue = (int) ((1 - volume) * 255);
+      setColor(255,255,fadeColorValue);
+    }
     if (pressure >= basePressure - noiseMargin && pressure <= basePressure + noiseMargin) {
       suckStop();
       neutralStart();
@@ -218,8 +245,6 @@ void processPressure(int pressure) {
       suckStop();
       blowStart();
     }
-    intensity = (basePressure - pressure) / (basePressure - minPressure);
-
     break;
   }
 }
@@ -234,7 +259,7 @@ void processPressure(int pressure) {
 // function rFlea.send(byte[]) to send the 8 bytes of data
 void onSync(){
   byte  message[8];
-  message[0] = volume;//unsigned(analogRead(A4)/4);//arduino is 10 bits, 1byte is 8 bits.
+  message[0] = (int) (volume * 100);//unsigned(analogRead(A4)/4);//arduino is 10 bits, 1byte is 8 bits.
   //Dividing by 4 we remove 2 bits
   message[1] = event;////unsigned(analogRead(A5)/4);
   message[2] = 0;//digitalRead(3);
@@ -267,25 +292,15 @@ void blowStart() {
   startTime = millis();
 }
 
-void setPreviousAction(int action) {
-  previousAction = action;
-  actionStart = millis();
-}
-
 void blowStop() {
   int duration = millis() - startTime;
   if (duration < maxPuffDuration) {
-    if (previousAction == PUFF) {
-      setPreviousAction(PUFFPUFF);
-      //send puffpuff to javascript
-      sendEvent(PUFFPUFF);
-    } 
-    else {
-      setPreviousAction(PUFF);
-    }
+    if (previousAction == PUFF) setPreviousAction(PUFFPUFF);
+    else setPreviousAction(PUFF);
   }
   else {
     // lights out
+    setColor(255,255,255);
   }
 }
 
@@ -297,22 +312,17 @@ void suckStart() {
 void suckStop() {
   int duration = millis() - startTime;
   if (duration < maxSipDuration) {
-    if (previousAction == SIP) {
-      setPreviousAction(SIPSIP);
-      // send sipsip to js
-      sendEvent(SIPSIP);
-    } 
-    else {
-      setPreviousAction(SIP);
-    }
+    if (previousAction == SIP) setPreviousAction(SIPSIP); 
+    else setPreviousAction(SIP);
   }
   else {
-    // lights out
+    //lights out
+    setColor(255,255,255);
   }
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-// EVENTS AND MORE BEAUTIFUL STUFF
+// HELPER METHODS
 //////////////////////////////////////////////////////////////////////////////////////////////
 
 void sendEvent(int eventCode) {
@@ -325,42 +335,89 @@ void setColor(int r, int g, int b) {
   analogWrite(bluePin, b);  
 }
 
+void setPreviousAction(int action) {
+  previousAction = action;
+  actionStart = millis();
+}
+
+void toggleLED() {
+  if (ledOn) digitalWrite(led, LOW);
+  else digitalWrite(led, HIGH); 
+  ledOn = !ledOn;
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////
 // FAKE IT UNTIL YOU MAKE IT
 //////////////////////////////////////////////////////////////////////////////////////////////
 
 void fake() {
-  //this method sends a fake puff, a fake sip and a fake puffpuff
+  //this method sends a fake puff, a fake sip, a fake puffpuff, a fake sipsip, a long fake blow & a short fake suck
   
   basePressure = 10;
-  maxPressure = 15;
-  minPressure = 5; 
+  maxPressure = 20;
+  minPressure = 0; 
   
   // PUFF  
-  if (millis()%10000 >= 1000 && millis()%10000 <= 1300) {
+  if (millis()%20000 >= 1000 && millis()%20000 <= 1300) {
     currentPressure = maxPressure;
   }
-  else if (millis()%10000 >= 1300 && millis()%10000 <= 4000) {
+  else if (millis()%20000 >= 1300 && millis()%20000 <= 4000) {
     currentPressure = basePressure;
   }
   
   // SIP
-  else if (millis()%10000 >= 4000 && millis()%10000 <= 4300) {
+  else if (millis()%20000 >= 4000 && millis()%20000 <= 4300) {
     currentPressure = minPressure;
   }
-  else if (millis()%10000 >= 4300 && millis()%10000 <= 7000) {
+  else if (millis()%20000 >= 4300 && millis()%20000 <= 7000) {
     currentPressure = basePressure;
   }
   
   // PUFFPUFF
-  else if (millis()%10000 >= 7000 && millis()%10000 <= 7300) {
+  else if (millis()%20000 >= 7000 && millis()%20000 <= 7300) {
     currentPressure = maxPressure;
   }
-  else if (millis()%10000 >= 7300 && millis()%10000 <= 7400) {
+  else if (millis()%20000 >= 7300 && millis()%20000 <= 7400) {
     currentPressure = basePressure;
   }
-  else if (millis()%10000 >= 7400 && millis()%10000 <= 7700) {
+  else if (millis()%20000 >= 7400 && millis()%20000 <= 7700) {
     currentPressure = maxPressure;
+  }
+  else if (millis()%20000 >= 7700 && millis()%20000 <= 10000) {
+    currentPressure = basePressure;
+  }
+  
+  // SIPSIP
+  else if (millis()%20000 >= 10000 && millis()%20000 <= 10300) {
+    currentPressure = minPressure;
+  }
+  else if (millis()%20000 >= 10300 && millis()%20000 <= 10400) {
+    currentPressure = basePressure;
+  }
+  else if (millis()%20000 >= 10400 && millis()%20000 <= 10700) {
+    currentPressure = minPressure;
+  }
+  else if (millis()%20000 >= 10700 && millis()%20000 <= 13000) {
+    currentPressure = basePressure;
+  }
+  
+  // BLOW
+  else if (millis()%20000 >= 13000 && millis()%20000 <= 14000) {
+    currentPressure = 13;
+  }
+  else if (millis()%20000 >= 14000 && millis()%20000 <= 15000) {
+    currentPressure = 17;
+  }
+  else if (millis()%20000 >= 15000 && millis()%20000 <= 16000) {
+    currentPressure = 20;
+  }
+  else if (millis()%20000 >= 16000 && millis()%20000 <= 17000) {
+    currentPressure = basePressure;
+  }
+  
+  // SUCK
+  else if (millis()%20000 >= 17000 && millis()%20000 <= 19000) {
+    currentPressure = minPressure;
   }
   else {
     currentPressure = basePressure;

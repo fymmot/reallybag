@@ -51,7 +51,7 @@ void setup() {
 
   //Set pullup resistors
   digitalWrite(12, HIGH);  
-  analogWrite(redPin,255);
+  analogWrite(redPin,0);
   analogWrite(bluePin,255);
   analogWrite(greenPin,255);
   
