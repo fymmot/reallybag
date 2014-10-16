@@ -17,7 +17,7 @@ var PUFF = 1,
 ///////////////////////////////////////////////////////////////////////////////
 
 function loop(data) {
-	audio.setVolume(data[0] / 100);
+	audio.setVolume(data[0] / 100.0);
 	switch (data[1]) {
 		case PUFF: 
 			audio.playPause();

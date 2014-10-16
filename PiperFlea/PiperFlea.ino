@@ -60,7 +60,7 @@ int state = NEUTRAL;
 int previousAction = 0;
 int maxSipDuration = 400;
 int maxPuffDuration = 400;
-int endActionTime = 400;	// how long to wait for the next action for combining actions
+int endActionTime = 600;	// how long to wait for the next action for combining actions
 char valueBuffer[2] = {
   'n','n'}; // how many relevant pressure readings in a row before we care
 long startTime;
@@ -68,7 +68,7 @@ long actionStart;
 int currentPressure;
 
 //DEBUG
-int counter = 0;
+boolean basePressureSet = false;
 boolean ledOn = false; 
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -128,11 +128,11 @@ void loop() {
   rflea.update();
   currentPressure = unsigned(analogRead(A5)/4);
   
-  if (counter == 200) { //wait a bit for the rFlea before we set up the basepressure
+  if (millis() >= 500 && basePressureSet == false) { //wait a bit for the rFlea before we set up the basepressure
     setupBagPipe(currentPressure);
+    basePressureSet = true;
     toggleLED();
   }
-  counter++;
 
   //<<<<<<<<<<<<<<<<<<<<<<<<<<<<< FAKE START >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
   // REMOVE THIS IF YOU WANT ACTUAL VALUES FROM THE PRESSURE SENSOR!!!

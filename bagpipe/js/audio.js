@@ -34,14 +34,14 @@ var audio = {
 		this.currentTrack = (this.currentTrack + 1) % 3;
 		this.player.src = "music/" + this.trackList[this.currentTrack];
 		this.player.load();
-		this.playPause();
+		this.player.play();
 	},
 
 	previous: function() {
 		this.currentTrack = (this.trackList.length + this.currentTrack - 1) % 3;
 		this.player.src = "music/" + this.trackList[this.currentTrack];
 		this.player.load();
-		this.playPause();
+		this.player.play();	
 	},
 
 	rewind: function(duration) {
