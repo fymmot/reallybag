@@ -110,11 +110,10 @@ void setup() {
   //Connect!!
   rflea.connect(SENSOR_RX);
 
-  setupBagPipe(); 
+  toggleLED();
 }
 
-void setupBagPipe() {
-  int pressure = unsigned(analogRead(A5)/4);
+void setupBagPipe(int pressure) {
   basePressure = pressure; //measure the ambient air pressure in the very beginning
   maxPressure = basePressure + 5;
   minPressure = basePressure - 5; 
@@ -127,16 +126,17 @@ void setupBagPipe() {
 void loop() {
   //Update rFlea every loop.
   rflea.update();
-  
-//  if (counter%100 < 50) digitalWrite(led,HIGH);
-//  else digitalWrite(led,LOW);
-//  counter++;
-  
   currentPressure = unsigned(analogRead(A5)/4);
+  
+  if (counter == 200) { //wait a bit for the rFlea before we set up the basepressure
+    setupBagPipe(currentPressure);
+    toggleLED();
+  }
+  counter++;
 
   //<<<<<<<<<<<<<<<<<<<<<<<<<<<<< FAKE START >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
   // REMOVE THIS IF YOU WANT ACTUAL VALUES FROM THE PRESSURE SENSOR!!!
-  fake();
+  //fake();
   //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< FAKE END >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
   
   int pressure = currentPressure;
