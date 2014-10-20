@@ -5,43 +5,53 @@ $(document).ready(function() {
 var audio = {
 	player: -1,
 	currentTrack: 0,
-	trackList: ["track0.mp3","track1.mp3","track2.mp3"],
+	players: [],
 
 	setup: function() {
-		this.player = document.getElementsByTagName('audio')[0];
-		this.player.src = "music/" + this.trackList[this.currentTrack];
-		this.player.load();
+		this.player1 = document.getElementById('audio1');
+		this.player2 = document.getElementById('audio2');
+		this.player3 = document.getElementById('audio3');
+		this.players.push(this.player1);
+		this.players.push(this.player2);
+		this.players.push(this.player3);
+		this.player1.load();
+		this.player2.load();
+		this.player3.load();
 	},
 
 	playPause: function() {
-		if (this.player.paused)
-			this.player.play();
+		if (this.players[this.currentTrack].paused)
+			this.players[this.currentTrack].play();
 		else
-			this.player.pause();
+			this.players[this.currentTrack].pause();
+	},
+
+	pauseAll: function() {
+		for (var i = 0; i<=3; i++) {
+			if (this.players[i] === undefined) return -1;
+			this.players[i].pause();
+		}
 	},
 
 	setVolume: function(volume) {
-		if (this.player === undefined) return -1;
-		this.player.volume = volume;
-	}
-
-	getVolume: function() {
-		if (this.player === undefined) return -1;
-		return this.player.volume;
+		for (var i = 0; i<=3; i++) {
+			if (this.players[i] === undefined) return -1;
+			this.players[i].volume = volume;
+		}
 	},
 
 	next: function() {
 		this.currentTrack = (this.currentTrack + 1) % 3;
-		this.player.src = "music/" + this.trackList[this.currentTrack];
-		this.player.load();
-		this.player.play();
+		this.pauseAll();
+		this.players[this.currentTrack].currentTime = 0;
+		this.players[this.currentTrack].play();
 	},
 
 	previous: function() {
-		this.currentTrack = (this.trackList.length + this.currentTrack - 1) % 3;
-		this.player.src = "music/" + this.trackList[this.currentTrack];
-		this.player.load();
-		this.player.play();	
+		this.currentTrack = (3 + this.currentTrack - 1) % 3;
+		this.pauseAll();
+		this.players[this.currentTrack].currentTime = 0;
+		this.players[this.currentTrack].play();
 	},
 
 	rewind: function(duration) {

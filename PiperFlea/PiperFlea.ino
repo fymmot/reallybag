@@ -32,8 +32,8 @@ rFlea_Arduino rflea = rFlea_Arduino();
 unsigned int serialNumber;
 
 int led = 13;
-int redPin = 11;
-int bluePin = 3;
+int redPin = 3;
+int bluePin = 11;
 int greenPin = 10;
 
 int basePressure;
@@ -127,7 +127,7 @@ void loop() {
   //Update rFlea every loop.
   rflea.update();
   currentPressure = unsigned(analogRead(A5)/4);
-  
+    
   if (millis() >= 500 && basePressureSet == false) { //wait a bit for the rFlea before we set up the basepressure
     setupBagPipe(currentPressure);
     basePressureSet = true;
@@ -270,13 +270,14 @@ void onSync(){
   message[7] = currentPressure; //Empty
   rflea.send(SENSOR_RX,message);
 
-  event = 0; // do not send the same shit twice
+//  event = 0; // do not send the same shit twice
 }
 
 
 //This Function will be called everytime we receive something
 void onMessageSensorRx(byte* message){   
   //Change to true if you want to print the data received 
+  if(message[0]==1) event = 0;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////

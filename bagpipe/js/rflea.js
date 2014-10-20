@@ -18,23 +18,29 @@ var PUFF = 1,
 
 function loop(data) {
 	audio.setVolume(data[0] / 100.0);
-	switch (data[1]) {
-		case PUFF: 
-			audio.playPause();
-			break;
-		case SIP:
-			audio.playPause();
-			break;
-		case PUFFPUFF:
-			audio.next();
-			break;
-		case SIPSIP:
-			audio.previous();
-			break;
-	}
+	if (data[1] == PUFF || data[1] == SIP) audio.playPause();
+	else if (data[1] == PUFFPUFF) audio.next();
+	else if (data[1] == SIPSIP) audio.previous();
+	// switch (data[1]) {
+	// 	case PUFF: 
+	// 		audio.playPause();
+	// 		break;
+	// 	case SIP:
+	// 		audio.playPause();
+	// 		break;
+	// 	case PUFFPUFF:
+	// 		audio.next();
+	// 		break;
+	// 	case SIPSIP:
+	// 		audio.previous();
+	// 		break;
+	// }
 
 	//output current value
 	$("#debug").html(data[0] + " " + data[1] + " " + data[7]);
+
+	var tx_message = toString(1,0,0,0,0,0,0,0);
+	var tx_successful = AntInterface.send(tx_message); //returns true if format is correct
 	
 }
 
@@ -63,8 +69,8 @@ function onMessage(data) {
 	//user code
 	loop(rFleaData);
 
-	//var tx_message = toString(1,1,2,3,4,5,6,7);
-	//var tx_successful = Antvarerface.send(tx_message); //returns true if format is correct
+	// var tx_message = toString(0,1,2,3,4,5,6,7);
+	// var tx_successful = Antvarerface.send(tx_message); //returns true if format is correct
 
 	if (debug && verbose) AndroidInterface.showToast(tx_message, tx_successful);
 }
