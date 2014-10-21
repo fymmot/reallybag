@@ -32,8 +32,8 @@ rFlea_Arduino rflea = rFlea_Arduino();
 unsigned int serialNumber;
 
 int led = 13;
-int redPin = 3;
-int bluePin = 11;
+int redPin = 11;
+int bluePin = 3;
 int greenPin = 10;
 
 int basePressure;
