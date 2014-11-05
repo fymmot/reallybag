@@ -126,7 +126,7 @@ void setupBagPipe(int pressure) {
 void loop() {
   //Update rFlea every loop.
   rflea.update();
-  currentPressure = unsigned(analogRead(A5)/4);
+  currentPressure = unsigned(analogRead(A5));
     
   if (millis() >= 500 && basePressureSet == false) { //wait a bit for the rFlea before we set up the basepressure
     setupBagPipe(currentPressure);
