@@ -1,3 +1,32 @@
+@font-face {
+    font-family: 'fha_condensed';
+    src: url('font/fhacondfrenchnc-webfont.eot');
+    src: url('font/fhacondfrenchnc-webfont.eot?#iefix') format('embedded-opentype'),
+         url('font/fhacondfrenchnc-webfont.woff2') format('woff2'),
+         url('font/fhacondfrenchnc-webfont.woff') format('woff'),
+         url('font/fhacondfrenchnc-webfont.ttf') format('truetype'),
+         url('font/fhacondfrenchnc-webfont.svg#fha_condensed_french_ncRg') format('svg');
+    font-weight: normal;
+    font-style: normal;
+
+}
+
+h1 {
+	font-size: 4em;
+	margin-bottom: 0em;
+	margin-top: 1em;
+}
+
+#volume {
+	display: block;
+	height: 4px;
+	background-color: #691212;
+	width: 320px;
+	margin-bottom: 3em;
+	margin-left: auto;
+	margin-right: auto;
+}
+
 #graph {
 	position: absolute;
 	right: 10px;
@@ -5,6 +34,42 @@
 	height: 200px;
 	width: 40px;
 	background: #ddd;
+}
+
+body {
+	font-size: 14px;
+	background-image: url("background.jpg");
+	text-align: center;
+	font-family: 'fha_condensed';
+	color: #691212;
+	width: 100%;
+	height: 100%;
+	position: absolute;
+	margin: 0;
+	padding: 0;
+}
+
+#overlay {
+	display: block;
+	width: 100%;
+	height: 100%;
+	background: #000;
+	opacity: 0.3;
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	margin: 0;
+	padding: 0;
+}
+
+audio {
+	opacity: 0.7;
+}
+
+a{
+	color:white;
 }
 
 #value {
@@ -15,3 +80,8 @@
 	height: 0;
 	display: block;
 }
+
+#debug, #buttons, #graph {
+	display: none;
+}
+

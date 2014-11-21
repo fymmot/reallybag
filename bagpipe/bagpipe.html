@@ -10,18 +10,22 @@
 		<link rel="stylesheet" href="styles.css">
 	</head>
 	<body>
-		<h1>Really bag pipe</h1>
-		<audio id="audio1" src="music/track0.mp3" controls>audio not supported…</audio>
-		<audio id="audio2" src="music/track1.mp3" controls>audio not supported…</audio>
-		<audio id="audio3" src="music/track2.mp3" controls>audio not supported…</audio>
+		<div id="overlay"></div>
+		<h1>THE PERIPLAYER</h1>
+		<div id="volume"></div>
+		<audio id="audio1" src="music/track0.mp3" controls>audio not supported…</audio><br/>
+		<audio id="audio2" src="music/track1.mp3" controls>audio not supported…</audio><br/>
+		<audio id="audio3" src="music/track2.mp3" controls>audio not supported…</audio><br/>
 		<div id="debug"></div>
 		<br/>
 		<div id="output"></div>
 		<div id="graph">
 			<div id="value"></div>
 		</div>
-		<a href="#" onclick="audio.playPause()">playpause</a>
-		<a href="#" onclick="audio.next()">next</a>
-		<a href="#" onclick="audio.previous()">previous</a>
+		<div id="buttons">
+			<a href="#" onclick="audio.playPause()">playpause</a>
+			<a href="#" onclick="audio.next()">next</a>
+			<a href="#" onclick="audio.previous()">previous</a>
+		</div>
 	</body>
 </html>

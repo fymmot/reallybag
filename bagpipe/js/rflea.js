@@ -20,6 +20,7 @@ var PUFF = 1,
 
 function loop(data) {
 	audio.setVolume(data[0] / 100.0);
+	$("#volume").width(320 * (data[0] / 100.0));
 	if(!waitAfterEvent){
 		var receiveEvent = false;
 		if (data[1] == PUFF || data[1] == SIP) {
