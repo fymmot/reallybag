@@ -41,6 +41,7 @@ int maxPressure;
 int minPressure;
 
 //ACTIONS
+const int NOTHING = 0;
 const int PUFF = 1;
 const int PUFFPUFF = 2;
 const int SIP = 3;
@@ -55,17 +56,18 @@ int event;
 double volume = 0.5;
 double volumeChangeRatio = 0.002;
 
-int noiseMargin = 8;
+int noiseMargin = 5;
 int state = NEUTRAL;
 int previousAction = 0;
 int maxSipDuration = 400;
 int maxPuffDuration = 400;
 int endActionTime = 600;	// how long to wait for the next action for combining actions
-char valueBuffer[2] = {
-  'n','n'}; // how many relevant pressure readings in a row before we care
+char valueBuffer[5] = {
+  'n','n','n','n','n'}; // how many relevant pressure readings in a row before we care
 long startTime;
 long actionStart;
 int currentPressure;
+int previousPressure;
 
 //DEBUG
 boolean basePressureSet = false;
@@ -115,8 +117,9 @@ void setup() {
 
 void setupBagPipe(int pressure) {
   basePressure = pressure; //measure the ambient air pressure in the very beginning
-  maxPressure = basePressure + 40;
-  minPressure = basePressure - 40; 
+  previousPressure = pressure;
+  maxPressure = basePressure + 18;
+  minPressure = basePressure - 18; 
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -138,36 +141,41 @@ void loop() {
   // REMOVE THIS IF YOU WANT ACTUAL VALUES FROM THE PRESSURE SENSOR!!!
   //fake();
   //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< FAKE END >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-  
   int pressure = currentPressure;
 
-  valueBuffer[0] = valueBuffer[1]; //this is the shift!
+  valueBuffer[0] = valueBuffer[1];
+  valueBuffer[1] = valueBuffer[2]; //this is the shift!
+  valueBuffer[2] = valueBuffer[3];
+  valueBuffer[3] = valueBuffer[4];
 
   if(pressure > basePressure + noiseMargin){
-    valueBuffer[1] = 'b';
+    valueBuffer[4] = 'b';
   }
   else if(pressure <= basePressure + noiseMargin && pressure >= basePressure - noiseMargin) {
-    valueBuffer[1] = 'n';
+    valueBuffer[4] = 'n';
   }
   else if(pressure < basePressure - noiseMargin) {
-    valueBuffer[1] = 's';
+    valueBuffer[4] = 's';
   }
-  for (int i = 1; i > 0; i--) {
+  for (int i = 4; i > 0; i--) {
     if(valueBuffer[i] != valueBuffer[i-1]){
+      processPressure(previousPressure);
+      checkEventsAndFeedback();
       return;
     }
   };
+  previousPressure = pressure;
   processPressure(pressure); //called only if we got nice values and not just noise  
   checkEventsAndFeedback();
 }
 
 void checkEventsAndFeedback() {
   if (millis() > actionStart + endActionTime) { //we ran out of time already
-    if (previousAction !=0) { //we already got something happening
+    if (previousAction != NOTHING) { //we already got something happening
       //send the action that has been performed to the phone to trigger audio control
       sendEvent(previousAction);
       setColor(255,255,255); //turn off the lights
-      previousAction = 0; //reset the action to neutral
+      previousAction = NOTHING; //reset the action to neutral
     }
   }
   else { //didn't run out of time yet
@@ -193,8 +201,8 @@ void processPressure(int pressure) {
   //// If we're here, we've gotten some good values in a row (i.e. not noise)
   double intensity;
   int fadeColorValue;
-  if (pressure > maxPressure) maxPressure = pressure;
-  else if (pressure < minPressure) minPressure = pressure;
+  if (pressure > maxPressure) maxPressure = (int) ((maxPressure + pressure) / 2);
+  else if (pressure < minPressure) minPressure = (int) ((minPressure + pressure) / 2);
 
   switch (state) {
 
@@ -267,7 +275,7 @@ void onSync(){
   message[4] = 0;//digitalRead(11);
   message[5] = 0;//digitalRead(12);
   message[6] = 0; //Empty
-  message[7] = currentPressure; //Empty
+  message[7] = currentPressure / 4; //Empty
   rflea.send(SENSOR_RX,message);
 
 //  event = 0; // do not send the same shit twice
@@ -296,7 +304,8 @@ void blowStart() {
 void blowStop() {
   int duration = millis() - startTime;
   if (duration < maxPuffDuration) {
-    if (previousAction == PUFF) setPreviousAction(PUFFPUFF);
+    if (previousAction == PUFF)
+      setPreviousAction(PUFFPUFF);
     else setPreviousAction(PUFF);
   }
   else {

@@ -12,36 +12,39 @@ var PUFF = 1,
     SIP = 3,
     SIPSIP = 4;
 
+    var waitAfterEvent = false;
+
 ///////////////////////////////////////////////////////////////////////////////
 // HERE'S WHERE THE MAGIC HAPPENS
 ///////////////////////////////////////////////////////////////////////////////
 
 function loop(data) {
 	audio.setVolume(data[0] / 100.0);
-	if (data[1] == PUFF || data[1] == SIP) audio.playPause();
-	else if (data[1] == PUFFPUFF) audio.next();
-	else if (data[1] == SIPSIP) audio.previous();
-	// switch (data[1]) {
-	// 	case PUFF: 
-	// 		audio.playPause();
-	// 		break;
-	// 	case SIP:
-	// 		audio.playPause();
-	// 		break;
-	// 	case PUFFPUFF:
-	// 		audio.next();
-	// 		break;
-	// 	case SIPSIP:
-	// 		audio.previous();
-	// 		break;
-	// }
+	if(!waitAfterEvent){
+		var receiveEvent = false;
+		if (data[1] == PUFF || data[1] == SIP) {
+			audio.playPause();
+			receiveEvent=true;
+		}
+		else if (data[1] == PUFFPUFF) {
+			audio.next();
+			receiveEvent = true;
+		}
+		else if (data[1] == SIPSIP) {
+			audio.previous();
+			receiveEvent=true;
+		}
+
+		if(receiveEvent){
+			waitAfterEvent = true;
+			setTimeout(function() {waitAfterEvent=false}, 400);
+		}
+	}	
 
 	//output current value
 	$("#debug").html(data[0] + " " + data[1] + " " + data[7]);
-
-	var tx_message = toString(1,0,0,0,0,0,0,0);
+	var tx_message = toString(waitAfterEvent ? 1 : 0,0,0,0,0,0,0,0);
 	var tx_successful = AntInterface.send(tx_message); //returns true if format is correct
-	
 }
 
 function printDebug(message) {
