@@ -55,7 +55,7 @@ int event;
 double volume = 0.5;
 double volumeChangeRatio = 0.002;
 
-int noiseMargin = 2;
+int noiseMargin = 8;
 int state = NEUTRAL;
 int previousAction = 0;
 int maxSipDuration = 400;
@@ -115,8 +115,8 @@ void setup() {
 
 void setupBagPipe(int pressure) {
   basePressure = pressure; //measure the ambient air pressure in the very beginning
-  maxPressure = basePressure + 5;
-  minPressure = basePressure - 5; 
+  maxPressure = basePressure + 40;
+  minPressure = basePressure - 40; 
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
